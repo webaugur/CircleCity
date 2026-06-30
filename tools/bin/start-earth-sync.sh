@@ -9,7 +9,7 @@ echo "Drag stations in GE, then Save (Ctrl+S) — GE writes ~/.googleearth/mypla
 echo ""
 echo "  NetworkLink: http://127.0.0.1:8765/link.kml"
 echo ""
-echo "Press Ctrl+C to stop."
+echo "Close Google Earth to save My Places and stop sync (or Ctrl+C)."
 echo ""
 
 exec python3 kml_sync.py --watch

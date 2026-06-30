@@ -53,3 +53,13 @@ After a successful pull, sync optionally persists to `data/seismic_network.kml` 
 6. Within ~3 s GE refresh shows updated lines/circles/rings
 
 Manual one-shot import without the server: `python3 tools/bin/kml_sync.py --pull-now`
+
+## Stop on Google Earth exit
+
+When sync started Google Earth (`--watch` without `--no-earth`), closing GE:
+
+1. Waits for `myplaces.kml` flush (GE saves My Places on exit)
+2. Imports final station positions + redraws attachments
+3. Archives `~/.googleearth/myplaces.kml` → `data/myplaces_saved.kml`
+4. Persists backup `data/seismic_network.kml`
+5. Stops the HTTP server and watcher

@@ -22,6 +22,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 KML_PATH = DATA_DIR / "seismic_network.kml"
 LINK_KML_PATH = DATA_DIR / "seismic_network_link.kml"
 CACHE_PATH = DATA_DIR / ".station_positions.json"
+MYPLACES_SAVED_PATH = DATA_DIR / "myplaces_saved.kml"
 
 LINE_ALT_M = 100000
 CIRCLE_RADIUS_M = 33966
@@ -566,6 +567,27 @@ def pull_from_myplaces(
     return changed or sorted(imported)
 
 
+def shutdown_on_earth_exit(
+    state,
+    myplaces_path: Path,
+    *,
+    myplaces_mtime: float,
+) -> None:
+    """GE closed: wait for myplaces flush, import, archive, persist backup."""
+    from myplaces_import import save_myplaces_copy, wait_for_myplaces_flush
+
+    print("Google Earth closed — saving My Places and stopping sync...")
+    wait_for_myplaces_flush(myplaces_mtime)
+
+    if myplaces_path.is_file():
+        pull_from_myplaces(state, myplaces_path, source="google-earth-exit", persist_backup=True)
+        saved = save_myplaces_copy(MYPLACES_SAVED_PATH)
+        if saved:
+            print(f"  Archived My Places → {saved}")
+    else:
+        print(f"  No {myplaces_path} found to import.")
+
+
 def ensure_earth_open(open_url: str) -> None:
     from earth_launcher import ensure_google_earth
 
@@ -584,6 +606,7 @@ def watch(
     port: int = DEFAULT_SERVER_PORT,
     host: str = "127.0.0.1",
 ) -> None:
+    from earth_launcher import is_google_earth_running
     from kml_server import KmlServer, KmlState
     from myplaces_import import MYPLACES_PATH
 
@@ -626,8 +649,15 @@ def watch(
         pull_from_myplaces(state, MYPLACES_PATH, source="startup", persist_backup=True)
         myplaces_mtime = MYPLACES_PATH.stat().st_mtime
 
+    track_earth = open_earth
+    ge_was_running = track_earth and is_google_earth_running()
+
     if open_earth:
         ensure_earth_open(link_url)
+        ge_was_running = is_google_earth_running()
+
+    if track_earth and ge_was_running:
+        print("  Close Google Earth to save My Places and stop sync automatically.")
 
     try:
         while True:
@@ -643,6 +673,13 @@ def watch(
                 if current != myplaces_mtime:
                     myplaces_mtime = current
                     schedule_pull("myplaces.kml")
+
+            if track_earth:
+                ge_running = is_google_earth_running()
+                if ge_was_running and not ge_running:
+                    shutdown_on_earth_exit(state, MYPLACES_PATH, myplaces_mtime=myplaces_mtime)
+                    break
+                ge_was_running = ge_running
 
             time.sleep(interval)
     except KeyboardInterrupt:

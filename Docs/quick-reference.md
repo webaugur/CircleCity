@@ -14,6 +14,7 @@ Each row: **action → intended outcome → code → data**.
 | Drag station + **Save** (Ctrl+S) | GE writes **My Places**, not `data/seismic_network.kml` | Google Earth save | `~/.googleearth/myplaces.kml` |
 | myplaces or ping fires (watch) | Import positions → redraw attachments → serve new KML over HTTP | `pull_from_myplaces`, `sync_document`, `KmlState.bump` | myplaces → memory; backup `data/seismic_network.kml` |
 | Sync redraws moved `CODE` | Lines, circles, rainbow rings update; next GE refresh shows them | `sync_document` | HTTP `/main.kml` response |
+| Close Google Earth (sync started GE) | Final myplaces import, archive to `data/myplaces_saved.kml`, stop server | `shutdown_on_earth_exit()` | `~/.googleearth/myplaces.kml` → `data/` |
 
 ---
 

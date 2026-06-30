@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import re
+import shutil
+import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -11,7 +13,32 @@ KML_NS = "http://www.opengis.net/kml/2.2"
 NS = f"{{{KML_NS}}}"
 
 MYPLACES_PATH = Path.home() / ".googleearth" / "myplaces.kml"
+MYPLACES_SAVED_NAME = "myplaces_saved.kml"
 ZERO_POINT_CODE = "ZeroPoint"
+
+
+def save_myplaces_copy(dest: Path) -> Path | None:
+    """Archive ~/.googleearth/myplaces.kml to dest (GE writes this on Save and on exit)."""
+    if not MYPLACES_PATH.is_file():
+        return None
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(MYPLACES_PATH, dest)
+    return dest
+
+
+def wait_for_myplaces_flush(since_mtime: float, timeout_s: float = 4.0) -> float:
+    """After GE exits it may flush myplaces.kml; wait for mtime to settle."""
+    deadline = time.monotonic() + timeout_s
+    latest = since_mtime
+    while time.monotonic() < deadline:
+        if MYPLACES_PATH.is_file():
+            latest = max(latest, MYPLACES_PATH.stat().st_mtime)
+            if latest > since_mtime:
+                time.sleep(0.4)
+                if MYPLACES_PATH.is_file():
+                    return MYPLACES_PATH.stat().st_mtime
+        time.sleep(0.2)
+    return latest
 
 
 def _placemark_coord(pm: ET.Element) -> tuple[float, float] | None:
