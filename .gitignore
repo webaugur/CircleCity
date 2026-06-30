@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 data/.station_positions.json
+data/.earth_launch.lock
 .DS_Store
 *.swp
 *~

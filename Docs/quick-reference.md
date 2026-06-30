@@ -9,8 +9,8 @@ Each row: **action → intended outcome → code → data**.
 | When you… | Then… | Code | Data |
 |-----------|-------|------|------|
 | Run `./tools/bin/start-earth-sync.sh` | Shell `cd`s to `tools/bin/`, prints the link KML path, and starts watch mode | `start-earth-sync.sh` → `kml_sync.py --watch` | — |
-| Start watch (above) and Google Earth is **not** running | Google Earth Pro launches in the background with the network-link KML loaded | `kml_sync.watch()` → `ensure_earth_open()` → `earth_launcher.ensure_google_earth()` (`background=True`) | `data/seismic_network_link.kml` |
-| Start watch and Google Earth **is** already running | The link KML is opened in the existing instance (no second `googleearth-bin` process) | `earth_launcher.ensure_google_earth()` (`background=False`, invokes `google-earth-pro`) | `data/seismic_network_link.kml` |
+| Start watch (above) and Google Earth is **not** running | One `google-earth-pro` wrapper is spawned; sync waits for a live `googleearth-bin` PID | `earth_launcher.ensure_google_earth()` → `_spawn_earth()` → `_wait_for_earth_bin()` | `data/seismic_network_link.kml` |
+| Start watch and Google Earth **is** already running | **No launch.** Sync reports existing `googleearth-bin` PID(s) and continues | `earth_launcher.google_earth_pids()` → early return (no `exec`) | — |
 | Start watch (with Earth launch) | Terminal prints `Watching … seismic_network.kml` and polls for saves | `kml_sync.watch()` | `data/seismic_network.kml` |
 | Expand **seismic_network.kml** in Google Earth under the network link | You see Stations, Line Layer, Circle Layer, Rainbow Rings, Reference Points | Google Earth NetworkLink loader | `data/seismic_network_link.kml` → `data/seismic_network.kml` |
 | Drag a station under **Stations** and **Save** (Ctrl+S) | Google Earth writes new coordinates into the main KML; file mtime changes | Google Earth save | `data/seismic_network.kml` (Stations folder `Point/coordinates`) |
@@ -53,7 +53,8 @@ Line endpoint parsing: placemark names like `RSSD → KBS (Ny-Alesund, …)` →
 | When you… | Then… | Code | Data |
 |-----------|-------|------|------|
 | Launch on Linux with GE installed | `find_google_earth()` resolves `/usr/bin/google-earth-pro` or `/opt/google/earth/pro/google-earth-pro` | `earth_launcher.py` | — |
-| Check if GE is running (Linux) | `pgrep -x googleearth-bin` (fallback: `pgrep -f googleearth-bin\|google-earth-pro`) | `is_google_earth_running()` | — |
+| Check if GE is running (Linux) | Collect live `googleearth-bin` PIDs via `pgrep -x`; skip zombies (`/proc/PID/stat` state `Z`) | `google_earth_pids()` / `is_google_earth_running()` | — |
+| Launch while another sync holds the lock | Wait for `googleearth-bin`; do not spawn another wrapper | `data/.earth_launch.lock` (`fcntl`) in `ensure_google_earth()` | `data/.earth_launch.lock` |
 | Earth binary missing | Warning on stderr; watch continues | `ensure_earth_open()` catches `RuntimeError` | — |
 | Link KML missing | `FileNotFoundError` warning; watch continues | `ensure_google_earth()` | `data/seismic_network_link.kml` |
 
