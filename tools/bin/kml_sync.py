@@ -667,12 +667,15 @@ def watch(
     open_earth: bool = True,
     port: int = DEFAULT_SERVER_PORT,
     host: str = "127.0.0.1",
+    auto_save_interval: float = 1.0,
 ) -> None:
     from console_keys import KeyListener
+    from earth_autosave import autosave_google_earth
     from earth_launcher import is_google_earth_running
     from git_history import GitHistory
     from kml_server import KmlServer, KmlState
     from myplaces_import import MYPLACES_PATH
+    from myplaces_notify import MyplacesNotifier
 
     tree = ET.parse(path)
     state = KmlState()
@@ -697,9 +700,27 @@ def watch(
 
     print("CircleCity — live pin watch + HTTP NetworkLink")
     print(f"  {link_url}")
-    print(f"  Polling station pin positions in {MYPLACES_PATH} every {interval:.2f}s")
-    print("  Drag pins in GE — no manual save required when GE flushes My Places")
+    print(f"  Polling pin coordinates every {interval:.2f}s in {MYPLACES_PATH}")
+    if auto_save_interval > 0:
+        print(
+            f"  GE only writes pins on Save — auto-saving every {auto_save_interval:.1f}s "
+            "(so drags flush without manual Ctrl+S)"
+        )
+    else:
+        print("  Auto-save off — Save (Ctrl+S) in GE after each drag")
     print("  Keys: u = undo last move   q = quit")
+
+    notify_pull = False
+
+    def on_myplaces_write() -> None:
+        nonlocal notify_pull
+        notify_pull = True
+
+    notifier = MyplacesNotifier(on_myplaces_write)
+    if notifier.start():
+        print("  inotify: instant reaction when myplaces.kml is written")
+    last_autosave = 0.0
+    autosave_warned = False
 
     process_live_station_moves(state, source="startup", git_hist=None)
     myplaces_mtime = MYPLACES_PATH.stat().st_mtime if MYPLACES_PATH.is_file() else 0.0
@@ -732,7 +753,22 @@ def watch(
                 elif ch == "q":
                     quit_requested = True
 
-            process_live_station_moves(state, source="pins", git_hist=git_hist)
+            now = time.time()
+            if auto_save_interval > 0 and is_google_earth_running():
+                if now - last_autosave >= auto_save_interval:
+                    if autosave_google_earth():
+                        last_autosave = now
+                        time.sleep(0.12)
+                        process_live_station_moves(state, source="auto-save", git_hist=git_hist)
+                    elif not autosave_warned:
+                        print("  Warning: could not auto-save GE (xdotool/window not found)")
+                        autosave_warned = True
+
+            if notify_pull:
+                notify_pull = False
+                process_live_station_moves(state, source="myplaces-write", git_hist=git_hist)
+            else:
+                process_live_station_moves(state, source="pins", git_hist=git_hist)
 
             if track_earth:
                 ge_running = is_google_earth_running()
@@ -745,6 +781,7 @@ def watch(
     except KeyboardInterrupt:
         print("\nStopped.")
     finally:
+        notifier.stop()
         keys.stop()
         server.stop()
 
@@ -778,6 +815,17 @@ def main() -> None:
         type=float,
         default=0.2,
         help="Seconds between station pin position polls (default: 0.2)",
+    )
+    parser.add_argument(
+        "--auto-save-interval",
+        type=float,
+        default=1.0,
+        help="Send Ctrl+S to GE every N seconds so pin moves flush (0=off, default: 1.0)",
+    )
+    parser.add_argument(
+        "--no-auto-save",
+        action="store_true",
+        help="Disable periodic Ctrl+S to Google Earth",
     )
     args = parser.parse_args()
 
@@ -817,7 +865,13 @@ def main() -> None:
         return
 
     if args.watch:
-        watch(open_earth=not args.no_earth, port=args.port, interval=args.poll_interval)
+        auto_iv = 0.0 if args.no_auto_save else args.auto_save_interval
+        watch(
+            open_earth=not args.no_earth,
+            port=args.port,
+            interval=args.poll_interval,
+            auto_save_interval=auto_iv,
+        )
         return
 
     changed = sync_kml(force_all=args.force_all)

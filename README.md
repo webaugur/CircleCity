@@ -18,7 +18,7 @@ See **[Docs/quick-reference.md](Docs/quick-reference.md)** for the full action â
 ./tools/bin/start-earth-sync.sh
 ```
 
-Starts a local HTTP NetworkLink server (`http://127.0.0.1:8765/link.kml`). Sync **polls station pin positions** in `~/.googleearth/myplaces.kml` every 0.2 s (no manual save). Each move redraws attachments, auto-commits `data/seismic_network.kml` to git, and pushes updates to GE on NetworkLink refresh. Press **`u`** in the sync terminal to undo (once per move).
+Starts HTTP NetworkLink (`http://127.0.0.1:8765/link.kml`). GE only writes pin moves on **Save** â€” sync auto-sends Ctrl+S every 1 s (`xdotool`), polls coordinates, redraws attachments, git-commits each move. Press **`u`** to undo.
 
 See **[Docs/networklink-architecture.md](Docs/networklink-architecture.md)**.
 

@@ -11,7 +11,7 @@ Google Earth                         CircleCity sync
 ─────────────                        ───────────────
 Drag station (in memory)
      │
-Pin drag (GE flushes My Places) ───► ~/.googleearth/myplaces.kml  (coordinate poll)
+Pin drag → auto-save (Ctrl+S via xdotool) ─► ~/.googleearth/myplaces.kml  (coordinate poll)
      │                                        │
      │                                        ├─ import station positions
      │                                        ├─ redraw attachments in memory
@@ -45,7 +45,7 @@ After a successful pull, sync optionally persists to `data/seismic_network.kml` 
 
 ## Live pin watch + git undo
 
-Sync polls **station pin coordinates** in `~/.googleearth/myplaces.kml` every 0.2 s (not file mtimes). When a pin moves relative to the served KML:
+**Google Earth on Linux only writes pin positions to My Places on Save.** Sync sends Ctrl+S to GE every 1 s (`earth_autosave.py` via `xdotool`), then polls coordinates in `~/.googleearth/myplaces.kml` every 0.2 s. When a pin moves relative to the served KML:
 
 1. Attachments redraw in memory
 2. HTTP `/main.kml` updates (GE sees it on next refresh)
