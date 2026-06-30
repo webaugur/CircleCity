@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect Google Earth Pro by PID; launch once; open KML via single-instance protocol."""
+"""Detect Google Earth Pro by PID; launch once; open KML/URL via single-instance protocol."""
 
 from __future__ import annotations
 
@@ -60,8 +60,6 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _pids_for_comm(comm: str) -> list[int]:
-    if sys.platform == "darwin":
-        return []
     try:
         result = subprocess.run(
             ["pgrep", "-x", comm],
@@ -73,60 +71,18 @@ def _pids_for_comm(comm: str) -> list[int]:
         return []
     if result.returncode != 0:
         return []
-    pids: list[int] = []
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if not line.isdigit():
-            continue
-        pid = int(line)
-        if _pid_alive(pid):
-            pids.append(pid)
-    return sorted(pids)
+    return sorted(
+        int(line)
+        for line in result.stdout.splitlines()
+        if line.strip().isdigit() and _pid_alive(int(line.strip()))
+    )
 
 
 def google_earth_pids() -> list[int]:
     if sys.platform == "darwin":
-        try:
-            result = subprocess.run(
-                [
-                    "osascript",
-                    "-e",
-                    'tell application "System Events" to get the unix id of '
-                    'every process whose name contains "Google Earth"',
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if result.returncode != 0 or not result.stdout.strip():
-                return []
-            return sorted(
-                int(pid)
-                for pid in result.stdout.replace(",", " ").split()
-                if pid.strip().isdigit() and _pid_alive(int(pid))
-            )
-        except FileNotFoundError:
-            return []
-
+        return []
     if sys.platform == "win32":
-        try:
-            result = subprocess.run(
-                ["tasklist", "/FI", "IMAGENAME eq googleearth.exe", "/FO", "CSV", "/NH"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            pids: list[int] = []
-            for line in result.stdout.splitlines():
-                parts = [p.strip('"') for p in line.split(",")]
-                if len(parts) >= 2 and parts[0].lower() == "googleearth.exe" and parts[1].isdigit():
-                    pid = int(parts[1])
-                    if _pid_alive(pid):
-                        pids.append(pid)
-            return sorted(pids)
-        except FileNotFoundError:
-            return []
-
+        return []
     return _pids_for_comm(EARTH_BIN_COMM)
 
 
@@ -134,9 +90,9 @@ def is_google_earth_running() -> bool:
     return bool(google_earth_pids())
 
 
-def ge_opened_paths() -> list[Path]:
-    """KML paths passed on the googleearth-bin command line (from /proc/PID/cmdline)."""
-    paths: list[Path] = []
+def ge_opened_targets() -> list[str]:
+    """KML paths or URLs on the googleearth-bin command line."""
+    targets: list[str] = []
     for pid in google_earth_pids():
         if sys.platform not in ("linux", "linux2"):
             continue
@@ -148,14 +104,21 @@ def ge_opened_paths() -> list[Path]:
             if not part:
                 continue
             text = part.decode(errors="replace")
-            if text.endswith(".kml") or text.endswith(".kmz"):
-                paths.append(Path(text).resolve())
-    return paths
+            if text.startswith("http://") or text.startswith("https://"):
+                targets.append(text)
+            elif text.endswith(".kml") or text.endswith(".kmz"):
+                targets.append(str(Path(text).resolve()))
+    return targets
 
 
-def _path_is_open(target: Path, opened: list[Path]) -> bool:
-    resolved = target.resolve()
-    return any(p == resolved for p in opened)
+def _target_is_open(target: str, opened: list[str]) -> bool:
+    norm = target.rstrip("/")
+    for item in opened:
+        if item.rstrip("/") == norm:
+            return True
+        if norm in item or item in norm:
+            return True
+    return False
 
 
 def _wait_for_earth_bin(timeout_s: float = STARTUP_TIMEOUT_S) -> list[int]:
@@ -195,10 +158,9 @@ class _LaunchLock:
         self._fh = None
 
 
-def _open_kml_nonblocking(earth_bin: Path, kml_path: Path) -> int:
-    """Hand a KML to the single-instance Google Earth process (does not wait)."""
+def _open_nonblocking(earth_bin: Path, target: str) -> int:
     proc = subprocess.Popen(
-        [str(earth_bin), str(kml_path.resolve())],
+        [str(earth_bin), target],
         env=os.environ.copy(),
         start_new_session=True,
         stdin=subprocess.DEVNULL,
@@ -208,76 +170,59 @@ def _open_kml_nonblocking(earth_bin: Path, kml_path: Path) -> int:
     return proc.pid
 
 
-def _spawn_earth(earth_bin: Path, kml_path: Path) -> int:
-    return _open_kml_nonblocking(earth_bin, kml_path)
-
-
 def ensure_google_earth(
-    link_kml: Path,
-    edit_kml: Path | None = None,
+    open_target: str | Path,
     *,
+    lock_dir: Path | None = None,
     startup_wait_s: float = STARTUP_TIMEOUT_S,
 ) -> str:
-    """Start GE once, open the editable KML, and register the NetworkLink for reload."""
-    link_kml = link_kml.resolve()
-    edit_kml = (edit_kml or link_kml).resolve()
-    if not link_kml.is_file():
-        raise FileNotFoundError(f"NetworkLink KML not found: {link_kml}")
-    if not edit_kml.is_file():
-        raise FileNotFoundError(f"Editable KML not found: {edit_kml}")
+    """Open a KML path or http:// NetworkLink URL in Google Earth (single instance)."""
+    target = str(open_target)
+    if not target.startswith("http://") and not target.startswith("https://"):
+        path = Path(target).resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"KML not found: {path}")
+        target = str(path)
 
     earth_bin = find_google_earth()
     if earth_bin is None:
         raise RuntimeError(
             "Google Earth Pro not found. Install it or open "
-            f"{edit_kml} manually, then re-run sync."
+            f"{target} manually, then re-run sync."
         )
 
-    opened = ge_opened_paths()
-    edit_open = _path_is_open(edit_kml, opened)
-    link_open = _path_is_open(link_kml, opened)
+    opened = ge_opened_targets()
     running = google_earth_pids()
 
     if running:
-        actions: list[str] = []
-        if not edit_open:
-            _open_kml_nonblocking(earth_bin, edit_kml)
-            actions.append(f"opened editable {edit_kml.name}")
-        if not link_open:
-            _open_kml_nonblocking(earth_bin, link_kml)
-            actions.append(f"registered NetworkLink {link_kml.name}")
         pid_text = ", ".join(str(pid) for pid in running)
-        if not actions:
-            return (
-                f"Google Earth Pro (PID {pid_text}) already has "
-                f"{edit_kml.name} and NetworkLink {link_kml.name}"
-            )
-        return f"Google Earth Pro (PID {pid_text}): {'; '.join(actions)}"
+        if _target_is_open(target, opened):
+            return f"Google Earth Pro (PID {pid_text}) already has {target}"
+        _open_nonblocking(earth_bin, target)
+        return f"Google Earth Pro (PID {pid_text}): opened {target}"
 
-    lock = _LaunchLock(link_kml.parent / LOCK_NAME)
+    lock_path = (lock_dir or Path.home()) / LOCK_NAME
+    lock = _LaunchLock(lock_path)
     if not lock.acquire():
         pids = _wait_for_earth_bin(timeout_s=startup_wait_s)
         if pids:
-            return ensure_google_earth(link_kml, edit_kml, startup_wait_s=startup_wait_s)
+            return ensure_google_earth(open_target, lock_dir=lock_dir, startup_wait_s=startup_wait_s)
         return "Google Earth Pro launch already in progress; not starting another instance."
 
     try:
         if google_earth_pids():
-            return ensure_google_earth(link_kml, edit_kml, startup_wait_s=startup_wait_s)
+            return ensure_google_earth(open_target, lock_dir=lock_dir, startup_wait_s=startup_wait_s)
 
-        wrapper_pid = _spawn_earth(earth_bin, edit_kml)
+        wrapper_pid = _open_nonblocking(earth_bin, target)
         pids = _wait_for_earth_bin(timeout_s=startup_wait_s)
-        if not pids:
+        if pids:
             return (
-                f"Launched Google Earth wrapper (PID {wrapper_pid}) with {edit_kml.name}; "
-                "googleearth-bin not detected yet."
+                f"Started Google Earth Pro (PID {', '.join(str(p) for p in pids)}, "
+                f"wrapper {wrapper_pid}) with {target}"
             )
-
-        time.sleep(0.5)
-        _open_kml_nonblocking(earth_bin, link_kml)
         return (
-            f"Started Google Earth Pro (PID {', '.join(str(p) for p in pids)}) "
-            f"with {edit_kml.name} + NetworkLink {link_kml.name}"
+            f"Launched Google Earth wrapper (PID {wrapper_pid}) with {target}; "
+            "googleearth-bin not detected yet."
         )
     finally:
         lock.release()

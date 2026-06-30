@@ -42,7 +42,7 @@ RAINBOW_RINGS = [
 ]
 RAINBOW_GROUND_ALT = 0
 
-_sync_write_until = 0.0
+DEFAULT_SERVER_PORT = 8765
 
 
 def txt(parent: ET.Element, tag: str, value: str) -> ET.Element:
@@ -456,14 +456,15 @@ def ensure_network_link(
     return changed
 
 
-def sync_kml(path: Path = KML_PATH, force_all: bool = False) -> list[str]:
-    global _sync_write_until
-    tree = ET.parse(path)
-    root = tree.getroot()
-    doc = root.find(f"{NS}Document")
-    if doc is None:
-        raise RuntimeError("Document element not found")
+def write_tree(tree: ET.ElementTree, path: Path) -> None:
+    ET.register_namespace("", KML_NS)
+    ET.indent(tree, space="  ")
+    with open(path, "wb") as f:
+        f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write(ET.tostring(tree.getroot(), encoding="utf-8"))
 
+
+def sync_document(doc: ET.Element, *, force_all: bool = False) -> list[str]:
     stations = read_stations_layer(doc)
     anchors = read_anchors(doc)
     cache = load_cache()
@@ -517,91 +518,120 @@ def sync_kml(path: Path = KML_PATH, force_all: bool = False) -> list[str]:
     sync_rainbow_rings(doc, rainbow_targets, changed)
 
     save_cache(anchors)
-
-    ET.indent(tree, space="  ")
-    with open(path, "wb") as f:
-        f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
-        f.write(ET.tostring(root, encoding="utf-8"))
-
-    _sync_write_until = time.time() + 1.5
-    try:
-        ensure_network_link(LINK_KML_PATH, path, bump_refresh=True)
-        _sync_write_until = time.time() + 1.5
-    except (OSError, RuntimeError) as exc:
-        print(f"Warning: NetworkLink refresh bump failed: {exc}", file=sys.stderr)
-
     return sorted(changed)
 
 
-def ensure_earth_open(
-    link_kml: Path = LINK_KML_PATH,
-    edit_kml: Path = KML_PATH,
-) -> None:
+def sync_kml(path: Path = KML_PATH, force_all: bool = False, *, persist: bool = True) -> list[str]:
+    tree = ET.parse(path)
+    doc = tree.getroot().find(f"{NS}Document")
+    if doc is None:
+        raise RuntimeError("Document element not found")
+    changed = sync_document(doc, force_all=force_all)
+    if changed and persist:
+        write_tree(tree, path)
+    return changed
+
+
+def pull_from_myplaces(
+    state,
+    myplaces_path: Path,
+    *,
+    source: str,
+    persist_backup: bool = True,
+) -> list[str]:
+    """Import GE edits from myplaces.kml, redraw attachments, serve via HTTP."""
+    from myplaces_import import apply_positions_to_document, read_myplaces_anchors
+
+    doc = state.root.find(f"{NS}Document")
+    if doc is None:
+        raise RuntimeError("Document element not found")
+
+    positions = read_myplaces_anchors(myplaces_path)
+    if not positions:
+        print(f"[{source}] No station anchors found in {myplaces_path}")
+        return []
+
+    imported = apply_positions_to_document(doc, positions)
+    if not imported:
+        return []
+
+    changed = sync_document(doc)
+    state.bump()
+    if persist_backup and (changed or imported):
+        write_tree(state.tree, KML_PATH)
+    if changed:
+        print(f"[{source}] Redrew attachments for: {', '.join(changed)}")
+    else:
+        print(f"[{source}] Updated station positions: {', '.join(sorted(imported))}")
+    return changed or sorted(imported)
+
+
+def ensure_earth_open(open_url: str) -> None:
     from earth_launcher import ensure_google_earth
 
     try:
-        ensure_network_link(link_kml, edit_kml)
-        print(ensure_google_earth(link_kml, edit_kml))
+        print(ensure_google_earth(open_url, lock_dir=DATA_DIR))
     except (FileNotFoundError, RuntimeError) as exc:
         print(f"Warning: {exc}", file=sys.stderr)
-
-
-def _watch_targets(edit_kml: Path, link_kml: Path) -> list[Path]:
-    return [edit_kml.resolve(), link_kml.resolve()]
 
 
 def watch(
     path: Path = KML_PATH,
     interval: float = 0.5,
-    debounce_s: float = 0.4,
+    debounce_s: float = 0.5,
     *,
     open_earth: bool = True,
-    link_kml: Path = LINK_KML_PATH,
+    port: int = DEFAULT_SERVER_PORT,
+    host: str = "127.0.0.1",
 ) -> None:
+    from kml_server import KmlServer, KmlState
+    from myplaces_import import MYPLACES_PATH
+
+    tree = ET.parse(path)
+    state = KmlState()
+    state.set_tree(tree)
+
+    pending_source: str | None = None
+    pending_at = 0.0
+    myplaces_mtime = (
+        MYPLACES_PATH.stat().st_mtime if MYPLACES_PATH.is_file() else 0.0
+    )
+
+    def schedule_pull(source: str) -> None:
+        nonlocal pending_source, pending_at
+        pending_source = source
+        pending_at = time.time()
+
+    def on_ping(_query: dict) -> None:
+        schedule_pull("NetworkLink ping")
+
+    server = KmlServer(state, host=host, port=port, on_ping=on_ping)
+    server.start()
+    link_url = server.link_url
+
+    print("CircleCity HTTP NetworkLink (Google Earth pulls KML from here; does not edit disk live)")
+    print(f"  {link_url}")
+    print(f"Watching Google Earth saves in: {MYPLACES_PATH}")
+    print("  Drag stations in GE, then Save (Ctrl+S) — GE writes myplaces.kml, not data/seismic_network.kml")
+
     if open_earth:
-        ensure_earth_open(link_kml, path)
-
-    watch_paths = _watch_targets(path, link_kml)
-    mtimes = {p: p.stat().st_mtime for p in watch_paths}
-    pending = 0.0
-    pending_sources: list[str] = []
-
-    print("Watching for saves after station drags (Ctrl+C to stop)...")
-    for p in watch_paths:
-        print(f"  {p}")
+        ensure_earth_open(link_url)
 
     while True:
         try:
-            if time.time() < _sync_write_until:
-                for p in watch_paths:
-                    mtimes[p] = p.stat().st_mtime
-                time.sleep(interval)
-                continue
+            if pending_source and (time.time() - pending_at) >= debounce_s:
+                source = pending_source
+                pending_source = None
+                pull_from_myplaces(state, MYPLACES_PATH, source=source)
+                if MYPLACES_PATH.is_file():
+                    myplaces_mtime = MYPLACES_PATH.stat().st_mtime
 
-            touched: list[str] = []
-            for p in watch_paths:
-                current = p.stat().st_mtime
-                if current != mtimes[p]:
-                    mtimes[p] = current
-                    touched.append(p.name)
-            if touched:
-                pending = time.time()
-                pending_sources = touched
+            if MYPLACES_PATH.is_file():
+                current = MYPLACES_PATH.stat().st_mtime
+                if current != myplaces_mtime:
+                    myplaces_mtime = current
+                    schedule_pull("myplaces.kml")
 
-            if pending and (time.time() - pending) >= debounce_s:
-                pending = 0.0
-                source_text = ", ".join(pending_sources)
-                pending_sources = []
-                changed = sync_kml(path)
-                for p in watch_paths:
-                    mtimes[p] = p.stat().st_mtime
-                if changed:
-                    print(f"[{source_text}] Redrew attachments for: {', '.join(changed)}")
-                else:
-                    print(
-                        f"[{source_text}] Save detected — "
-                        "no station coordinate changes in seismic_network.kml."
-                    )
             time.sleep(interval)
         except KeyboardInterrupt:
             print("\nStopped.")
@@ -620,6 +650,12 @@ def main() -> None:
         "--no-earth",
         action="store_true",
         help="Do not start or focus Google Earth when watching",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=DEFAULT_SERVER_PORT,
+        help="HTTP port for NetworkLink KML server (default: 8765)",
     )
     args = parser.parse_args()
 
@@ -648,7 +684,7 @@ def main() -> None:
         return
 
     if args.watch:
-        watch(open_earth=not args.no_earth)
+        watch(open_earth=not args.no_earth, port=args.port)
         return
 
     changed = sync_kml(force_all=args.force_all)

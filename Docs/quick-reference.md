@@ -4,22 +4,16 @@ Each row: **action → intended outcome → code → data**.
 
 ---
 
-## Daily workflow
+## Daily workflow (HTTP NetworkLink — see [networklink-architecture.md](networklink-architecture.md))
 
 | When you… | Then… | Code | Data |
 |-----------|-------|------|------|
-| Run `./tools/bin/start-earth-sync.sh` | Shell `cd`s to `tools/bin/`, prints the link KML path, and starts watch mode | `start-earth-sync.sh` → `kml_sync.py --watch` | — |
-| Start watch (above) | NetworkLink `href` set to absolute `file://` URI; GE gets editable main KML + link sidecar | `ensure_network_link()` then `ensure_google_earth(link, edit)` | `data/seismic_network.kml`, `data/seismic_network_link.kml` |
-| Start watch, GE **not** running | Spawns GE with `seismic_network.kml`, then non-blocking open of link KML for reload | `_spawn_earth(edit_kml)` → `_open_kml_nonblocking(link_kml)` | `data/seismic_network.kml`, `data/seismic_network_link.kml` |
-| Start watch, GE **already** running | Checks `/proc/PID/cmdline`; opens missing files via non-blocking `google-earth-pro` (no second `googleearth-bin`) | `ge_opened_paths()` → `_open_kml_nonblocking()` | same |
-| Start watch (with Earth launch) | Terminal prints `Watching … seismic_network.kml` and polls for saves | `kml_sync.watch()` | `data/seismic_network.kml` |
-| Edit **seismic_network.kml** directly in Google Earth (opened by sync) | Drag/save writes to the watched file — not only through the NetworkLink tree | Google Earth save | `data/seismic_network.kml` (Stations folder `Point/coordinates`) |
-| Drag a station under **Stations** and **Save** (Ctrl+S) | `mtime` changes on main and/or link KML; watcher debounces 0.4 s | Google Earth save | `data/seismic_network.kml` |
-| Save after dragging (watch running) | Sync compares anchors to cache, redraws attachments, bumps NetworkLink timestamp | `watch()` → `sync_kml()` → `ensure_network_link()` | `data/seismic_network.kml`, `data/.station_positions.json`, `data/seismic_network_link.kml` |
-| Sync rewrites KML | Watcher ignores self-writes for 1.5 s (`_sync_write_until`); GE NetworkLink `onChange` sees `file://` href target change | `_sync_write_until` guard in `watch()` | `data/seismic_network.kml` |
-| Save but coordinates unchanged | Terminal: `File saved — no station coordinate changes detected.` | `sync_kml()` → `moved_anchors()` returns empty | `data/.station_positions.json` unchanged |
-| Sync redraws a moved station `CODE` | Station description text, circle, any lines touching `CODE`, and rainbow rings for `CODE` are recomputed at the new lat/lon | `update_station_description`, `update_circle`, `update_line`, `sync_rainbow_rings` in `kml_sync.py` | `data/seismic_network.kml` (Circle Layer, Line Layer, Rainbow Rings folders) |
-| Sync finishes a redraw | Google Earth NetworkLink detects file change and reloads within ~2 s | Google Earth `refreshMode=onChange` on the link | `data/seismic_network_link.kml` → `data/seismic_network.kml` |
+| Run `./tools/bin/start-earth-sync.sh` | HTTP server + watch start; GE opens NetworkLink URL | `start-earth-sync.sh` → `kml_sync.watch()` | `http://127.0.0.1:8765/link.kml` |
+| GE loads NetworkLink | GE GETs `/main.kml` every 3 s (`refreshMode=onInterval`) | `kml_server.KmlServer` | in-memory `KmlState` |
+| GE view stops | GE GETs `/main.kml?ping=1…` (`viewRefreshMode=onStop`) | `on_ping` → `schedule_pull` | — |
+| Drag station + **Save** (Ctrl+S) | GE writes **My Places**, not `data/seismic_network.kml` | Google Earth save | `~/.googleearth/myplaces.kml` |
+| myplaces or ping fires (watch) | Import positions → redraw attachments → serve new KML over HTTP | `pull_from_myplaces`, `sync_document`, `KmlState.bump` | myplaces → memory; backup `data/seismic_network.kml` |
+| Sync redraws moved `CODE` | Lines, circles, rainbow rings update; next GE refresh shows them | `sync_document` | HTTP `/main.kml` response |
 
 ---
 
