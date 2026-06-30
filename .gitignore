@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.station_positions.json
+.DS_Store
+*.swp
+*~

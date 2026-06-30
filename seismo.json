@@ -1,0 +1,609 @@
+{
+  "network": "IU",
+  "network_name": "Global Seismograph Network (GSN)",
+  "source": "https://service.earthscope.org/fdsnws/station/1/query?network=IU&level=station&format=text",
+  "retrieved": "2026-06-29",
+  "station_count": 75,
+  "stations": [
+    {
+      "code": "ADK",
+      "full_code": "IU/ADK",
+      "location": "Adak, Aleutian Islands, Alaska",
+      "latitude": 51.8823,
+      "longitude": -176.6842,
+      "elevation_m": 130.0
+    },
+    {
+      "code": "AFI",
+      "full_code": "IU/AFI",
+      "location": "Afiamalu, Samoa",
+      "latitude": -13.90853,
+      "longitude": -171.78265,
+      "elevation_m": 706.0
+    },
+    {
+      "code": "ANMO",
+      "full_code": "IU/ANMO",
+      "location": "Albuquerque, New Mexico, USA",
+      "latitude": 34.94591,
+      "longitude": -106.4572,
+      "elevation_m": 1820.0
+    },
+    {
+      "code": "ANTO",
+      "full_code": "IU/ANTO",
+      "location": "Ankara, Turkey",
+      "latitude": 39.8681,
+      "longitude": 32.79356,
+      "elevation_m": 1080.0
+    },
+    {
+      "code": "BBSR",
+      "full_code": "IU/BBSR",
+      "location": "Bermuda Institute of Ocean Sciences, St George's Bermuda",
+      "latitude": 32.371299,
+      "longitude": -64.696299,
+      "elevation_m": 30.0
+    },
+    {
+      "code": "BILL",
+      "full_code": "IU/BILL",
+      "location": "Bilibino, Russia",
+      "latitude": 68.0653,
+      "longitude": 166.4531,
+      "elevation_m": 320.0
+    },
+    {
+      "code": "CASY",
+      "full_code": "IU/CASY",
+      "location": "Casey, Antarctica",
+      "latitude": -66.2792,
+      "longitude": 110.5354,
+      "elevation_m": 10.0
+    },
+    {
+      "code": "CCM",
+      "full_code": "IU/CCM",
+      "location": "Cathedral Cave, Missouri, USA",
+      "latitude": 38.0557,
+      "longitude": -91.2446,
+      "elevation_m": 222.0
+    },
+    {
+      "code": "CHTO",
+      "full_code": "IU/CHTO",
+      "location": "Chiang Mai, Thailand",
+      "latitude": 18.81401,
+      "longitude": 98.94447,
+      "elevation_m": 481.0
+    },
+    {
+      "code": "COLA",
+      "full_code": "IU/COLA",
+      "location": "College Outpost, Alaska, USA",
+      "latitude": 64.873599,
+      "longitude": -147.8616,
+      "elevation_m": 200.0
+    },
+    {
+      "code": "COR",
+      "full_code": "IU/COR",
+      "location": "Corvallis, Oregon, USA",
+      "latitude": 44.5855,
+      "longitude": -123.3046,
+      "elevation_m": 110.0
+    },
+    {
+      "code": "CTAO",
+      "full_code": "IU/CTAO",
+      "location": "Charters Towers, Australia",
+      "latitude": -20.08765,
+      "longitude": 146.24998,
+      "elevation_m": 367.0
+    },
+    {
+      "code": "DAV",
+      "full_code": "IU/DAV",
+      "location": "Davao, Philippines",
+      "latitude": 7.0697,
+      "longitude": 125.5791,
+      "elevation_m": 151.0
+    },
+    {
+      "code": "DWPF",
+      "full_code": "IU/DWPF",
+      "location": "Disney Wilderness Preserve, Florida, USA",
+      "latitude": 28.1103,
+      "longitude": -81.4327,
+      "elevation_m": 30.0
+    },
+    {
+      "code": "FUNA",
+      "full_code": "IU/FUNA",
+      "location": "Funafuti, Tuvalu",
+      "latitude": -8.5259,
+      "longitude": 179.1966,
+      "elevation_m": 20.0
+    },
+    {
+      "code": "FURI",
+      "full_code": "IU/FURI",
+      "location": "Mt. Furi, Ethiopia",
+      "latitude": 8.8952,
+      "longitude": 38.6798,
+      "elevation_m": 2570.0
+    },
+    {
+      "code": "GNI",
+      "full_code": "IU/GNI",
+      "location": "Garni, Armenia",
+      "latitude": 40.148,
+      "longitude": 44.741,
+      "elevation_m": 1609.0
+    },
+    {
+      "code": "GRFO",
+      "full_code": "IU/GRFO",
+      "location": "Grafenberg, Germany",
+      "latitude": 49.6909,
+      "longitude": 11.2203,
+      "elevation_m": 384.0
+    },
+    {
+      "code": "GUMO",
+      "full_code": "IU/GUMO",
+      "location": "Guam, Mariana Islands",
+      "latitude": 13.5893,
+      "longitude": 144.8684,
+      "elevation_m": 142.0
+    },
+    {
+      "code": "HKT",
+      "full_code": "IU/HKT",
+      "location": "Hockley1 Texas",
+      "latitude": 29.96478,
+      "longitude": -95.83812,
+      "elevation_m": 69.0
+    },
+    {
+      "code": "HNR",
+      "full_code": "IU/HNR",
+      "location": "Honiara, Solomon Islands",
+      "latitude": -9.4387,
+      "longitude": 159.9475,
+      "elevation_m": 100.0
+    },
+    {
+      "code": "HRV",
+      "full_code": "IU/HRV",
+      "location": "Adam Dziewonski Observatory (Oak Ridge), Massachusetts, USA",
+      "latitude": 42.5064,
+      "longitude": -71.5583,
+      "elevation_m": 200.0
+    },
+    {
+      "code": "INCN",
+      "full_code": "IU/INCN",
+      "location": "Inchon, Republic of Korea",
+      "latitude": 37.47768,
+      "longitude": 126.62436,
+      "elevation_m": 55.0
+    },
+    {
+      "code": "JOHN",
+      "full_code": "IU/JOHN",
+      "location": "Johnston Island, USA",
+      "latitude": 16.7329,
+      "longitude": -169.5292,
+      "elevation_m": 2.0
+    },
+    {
+      "code": "KBS",
+      "full_code": "IU/KBS",
+      "location": "Ny-Alesund, Spitzbergen, Norway",
+      "latitude": 78.9154,
+      "longitude": 11.9385,
+      "elevation_m": 90.0
+    },
+    {
+      "code": "KEV",
+      "full_code": "IU/KEV",
+      "location": "Kevo, Finland",
+      "latitude": 69.7565,
+      "longitude": 27.0035,
+      "elevation_m": 100.0
+    },
+    {
+      "code": "KIEV",
+      "full_code": "IU/KIEV",
+      "location": "Kiev, Ukraine",
+      "latitude": 50.7012,
+      "longitude": 29.2242,
+      "elevation_m": 180.0
+    },
+    {
+      "code": "KIP",
+      "full_code": "IU/KIP",
+      "location": "Kipapa, Hawaii, USA",
+      "latitude": 21.42,
+      "longitude": -158.0112,
+      "elevation_m": 110.0
+    },
+    {
+      "code": "KMBO",
+      "full_code": "IU/KMBO",
+      "location": "Kilima Mbogo, Kenya",
+      "latitude": -1.1271,
+      "longitude": 37.2525,
+      "elevation_m": 1950.0
+    },
+    {
+      "code": "KONO",
+      "full_code": "IU/KONO",
+      "location": "Kongsberg, Norway",
+      "latitude": 59.6521,
+      "longitude": 9.5946,
+      "elevation_m": 558.0
+    },
+    {
+      "code": "LCO",
+      "full_code": "IU/LCO",
+      "location": "Las Campanas Astronomical Observatory, Chile",
+      "latitude": -29.011,
+      "longitude": -70.7005,
+      "elevation_m": 2274.0
+    },
+    {
+      "code": "LSZ",
+      "full_code": "IU/LSZ",
+      "location": "Lusaka, Zambia",
+      "latitude": -15.2779,
+      "longitude": 28.1882,
+      "elevation_m": 1200.0
+    },
+    {
+      "code": "MA2",
+      "full_code": "IU/MA2",
+      "location": "Magadan, Russia",
+      "latitude": 59.5756,
+      "longitude": 150.77,
+      "elevation_m": 337.0
+    },
+    {
+      "code": "MACI",
+      "full_code": "IU/MACI",
+      "location": "Morro de la Arena, Canary Islands",
+      "latitude": 28.2502,
+      "longitude": -16.508199,
+      "elevation_m": 1674.0
+    },
+    {
+      "code": "MAJO",
+      "full_code": "IU/MAJO",
+      "location": "Matsushiro, Japan",
+      "latitude": 36.54567,
+      "longitude": 138.20406,
+      "elevation_m": 405.0
+    },
+    {
+      "code": "MAKZ",
+      "full_code": "IU/MAKZ",
+      "location": "Makanchi, Kazakhstan",
+      "latitude": 46.808,
+      "longitude": 81.977,
+      "elevation_m": 600.0
+    },
+    {
+      "code": "MBWA",
+      "full_code": "IU/MBWA",
+      "location": "Marble Bar, Western Australia",
+      "latitude": -21.159,
+      "longitude": 119.7313,
+      "elevation_m": 190.0
+    },
+    {
+      "code": "MIDW",
+      "full_code": "IU/MIDW",
+      "location": "Midway Island, USA",
+      "latitude": 28.2154,
+      "longitude": -177.3697,
+      "elevation_m": 9.0
+    },
+    {
+      "code": "NWAO",
+      "full_code": "IU/NWAO",
+      "location": "Narrogin, Australia",
+      "latitude": -32.9277,
+      "longitude": 117.239,
+      "elevation_m": 380.0
+    },
+    {
+      "code": "OTAV",
+      "full_code": "IU/OTAV",
+      "location": "Otavalo, Ecuador",
+      "latitude": 0.2376,
+      "longitude": -78.45076,
+      "elevation_m": 3491.0
+    },
+    {
+      "code": "PAB",
+      "full_code": "IU/PAB",
+      "location": "San Pablo, Spain",
+      "latitude": 39.5446,
+      "longitude": -4.3499,
+      "elevation_m": 950.0
+    },
+    {
+      "code": "PAYG",
+      "full_code": "IU/PAYG",
+      "location": "Puerto Ayora, Galapagos Islands",
+      "latitude": -0.6742,
+      "longitude": -90.2861,
+      "elevation_m": 270.0
+    },
+    {
+      "code": "PET",
+      "full_code": "IU/PET",
+      "location": "Petropavlovsk, Russia",
+      "latitude": 53.0233,
+      "longitude": 158.6499,
+      "elevation_m": 110.0
+    },
+    {
+      "code": "PMG",
+      "full_code": "IU/PMG",
+      "location": "Port Moresby, New Guinea",
+      "latitude": -9.4047,
+      "longitude": 147.1597,
+      "elevation_m": 90.0
+    },
+    {
+      "code": "PMSA",
+      "full_code": "IU/PMSA",
+      "location": "Palmer Station, Antarctica",
+      "latitude": -64.7744,
+      "longitude": -64.0489,
+      "elevation_m": 10.0
+    },
+    {
+      "code": "POHA",
+      "full_code": "IU/POHA",
+      "location": "Pohakuloa, Hawaii, USA",
+      "latitude": 19.7573,
+      "longitude": -155.5326,
+      "elevation_m": 1990.0
+    },
+    {
+      "code": "PTCN",
+      "full_code": "IU/PTCN",
+      "location": "Pitcairn Island, South Pacific",
+      "latitude": -25.0713,
+      "longitude": -130.0953,
+      "elevation_m": 220.0
+    },
+    {
+      "code": "QSPA",
+      "full_code": "IU/QSPA",
+      "location": "South Pole Remote Earth Science Observatory (Quiet Zone)",
+      "latitude": -89.9289,
+      "longitude": 144.4382,
+      "elevation_m": 2850.0
+    },
+    {
+      "code": "RAO",
+      "full_code": "IU/RAO",
+      "location": "Raoul, Kermadec Islands",
+      "latitude": -29.245,
+      "longitude": -177.929,
+      "elevation_m": 60.0
+    },
+    {
+      "code": "RAR",
+      "full_code": "IU/RAR",
+      "location": "Rarotonga, Cook Islands",
+      "latitude": -21.2125,
+      "longitude": -159.7733,
+      "elevation_m": 28.0
+    },
+    {
+      "code": "RCBR",
+      "full_code": "IU/RCBR",
+      "location": "Riachuelo, Brazil",
+      "latitude": -5.8274,
+      "longitude": -35.9014,
+      "elevation_m": 400.0
+    },
+    {
+      "code": "RSSD",
+      "full_code": "IU/RSSD",
+      "location": "Black Hills, South Dakota, USA",
+      "latitude": 44.1212,
+      "longitude": -104.0359,
+      "elevation_m": 2090.0
+    },
+    {
+      "code": "SAML",
+      "full_code": "IU/SAML",
+      "location": "Samuel, Brazil",
+      "latitude": -8.9489,
+      "longitude": -63.1831,
+      "elevation_m": 120.0
+    },
+    {
+      "code": "SBA",
+      "full_code": "IU/SBA",
+      "location": "Scott Base, Antarctica",
+      "latitude": -77.8492,
+      "longitude": 166.7572,
+      "elevation_m": 50.0
+    },
+    {
+      "code": "SDV",
+      "full_code": "IU/SDV",
+      "location": "Santo Domingo, Venezuela",
+      "latitude": 8.8839,
+      "longitude": -70.634,
+      "elevation_m": 1620.0
+    },
+    {
+      "code": "SFJD",
+      "full_code": "IU/SFJD",
+      "location": "Sondre Stromfjord, Greenland",
+      "latitude": 66.9961,
+      "longitude": -50.62076,
+      "elevation_m": 330.0
+    },
+    {
+      "code": "SJG",
+      "full_code": "IU/SJG",
+      "location": "San Juan, Puerto Rico",
+      "latitude": 18.1091,
+      "longitude": -66.15,
+      "elevation_m": 420.0
+    },
+    {
+      "code": "SLBS",
+      "full_code": "IU/SLBS",
+      "location": "Sierra la Laguna Baja California Sur, Mexico",
+      "latitude": 23.6858,
+      "longitude": -109.9443,
+      "elevation_m": 825.0
+    },
+    {
+      "code": "SNZO",
+      "full_code": "IU/SNZO",
+      "location": "South Karori, New Zealand",
+      "latitude": -41.3087,
+      "longitude": 174.7043,
+      "elevation_m": 120.0
+    },
+    {
+      "code": "SSPA",
+      "full_code": "IU/SSPA",
+      "location": "Standing Stone, Pennsylvania",
+      "latitude": 40.6358,
+      "longitude": -77.8876,
+      "elevation_m": 270.0
+    },
+    {
+      "code": "TARA",
+      "full_code": "IU/TARA",
+      "location": "Tarawa Island, Republic of Kiribati",
+      "latitude": 1.3549,
+      "longitude": 172.9229,
+      "elevation_m": 20.0
+    },
+    {
+      "code": "TATO",
+      "full_code": "IU/TATO",
+      "location": "Taipei, Taiwan",
+      "latitude": 24.9735,
+      "longitude": 121.4971,
+      "elevation_m": 160.0
+    },
+    {
+      "code": "TEIG",
+      "full_code": "IU/TEIG",
+      "location": "Tepich, Yucatan, Mexico",
+      "latitude": 20.22624,
+      "longitude": -88.27633,
+      "elevation_m": 32.0
+    },
+    {
+      "code": "TIXI",
+      "full_code": "IU/TIXI",
+      "location": "Tiksi, Russia",
+      "latitude": 71.6341,
+      "longitude": 128.8667,
+      "elevation_m": 40.0
+    },
+    {
+      "code": "TRIS",
+      "full_code": "IU/TRIS",
+      "location": "Tristan da Cunha",
+      "latitude": -37.0681,
+      "longitude": -12.3152,
+      "elevation_m": 60.0
+    },
+    {
+      "code": "TRQA",
+      "full_code": "IU/TRQA",
+      "location": "Tornquist, Argentina",
+      "latitude": -38.0568,
+      "longitude": -61.9787,
+      "elevation_m": 540.0
+    },
+    {
+      "code": "TSUM",
+      "full_code": "IU/TSUM",
+      "location": "Tsumeb, Namibia",
+      "latitude": -19.20227,
+      "longitude": 17.58376,
+      "elevation_m": 1229.0
+    },
+    {
+      "code": "TUC",
+      "full_code": "IU/TUC",
+      "location": "Tucson, Arizona",
+      "latitude": 32.3098,
+      "longitude": -110.7847,
+      "elevation_m": 910.0
+    },
+    {
+      "code": "ULN",
+      "full_code": "IU/ULN",
+      "location": "Ulaanbaatar, Mongolia",
+      "latitude": 47.8651,
+      "longitude": 107.0532,
+      "elevation_m": 1610.0
+    },
+    {
+      "code": "WAKE",
+      "full_code": "IU/WAKE",
+      "location": "Wake Island",
+      "latitude": 19.2834,
+      "longitude": 166.652,
+      "elevation_m": 8.0
+    },
+    {
+      "code": "WCI",
+      "full_code": "IU/WCI",
+      "location": "Wyandotte Cave, Indiana, USA",
+      "latitude": 38.2289,
+      "longitude": -86.2939,
+      "elevation_m": 210.0
+    },
+    {
+      "code": "WVT",
+      "full_code": "IU/WVT",
+      "location": "Waverly, Tennessee, USA",
+      "latitude": 36.1297,
+      "longitude": -87.83,
+      "elevation_m": 170.0
+    },
+    {
+      "code": "XMAS",
+      "full_code": "IU/XMAS",
+      "location": "Kiritimati Island, Republic of Kiribati",
+      "latitude": 2.0448,
+      "longitude": -157.4457,
+      "elevation_m": 20.0
+    },
+    {
+      "code": "YAK",
+      "full_code": "IU/YAK",
+      "location": "Yakutsk, Russia",
+      "latitude": 62.031,
+      "longitude": 129.6805,
+      "elevation_m": 110.0
+    },
+    {
+      "code": "YSS",
+      "full_code": "IU/YSS",
+      "location": "Yuzhno Sakhalinsk, Russia",
+      "latitude": 46.9587,
+      "longitude": 142.7604,
+      "elevation_m": 150.0
+    }
+  ]
+}

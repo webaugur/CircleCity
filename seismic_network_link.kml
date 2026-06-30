@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Seismic Network (live)</name>
+    <description>
+      Auto-reloads seismic_network.kml when kml_sync.py --watch rewrites it.
+
+      Workflow:
+      1. Run ./start-earth-sync.sh (or: python3 kml_sync.py --watch)
+      2. Open THIS file in Google Earth Pro (keep it open)
+      3. Expand the network link, drag stations under Stations
+      4. File → Save (Ctrl+S) — saves back to seismic_network.kml
+      5. Watch redraws lines/circles/rainbow; this link reloads within a few seconds
+
+      Tip: You may also open seismic_network.kml directly to edit; click Reload
+      when Google Earth reports the file changed on disk.
+    </description>
+    <NetworkLink>
+      <name>seismic_network.kml</name>
+      <open>1</open>
+      <refreshVisibility>1</refreshVisibility>
+      <flyToView>0</flyToView>
+      <Link>
+        <href>seismic_network.kml</href>
+        <refreshMode>onChange</refreshMode>
+        <refreshInterval>2</refreshInterval>
+        <viewRefreshMode>onRequest</viewRefreshMode>
+        <viewRefreshTime>1</viewRefreshTime>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>
