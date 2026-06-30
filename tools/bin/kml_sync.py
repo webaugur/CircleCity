@@ -533,24 +533,35 @@ def sync_kml(path: Path = KML_PATH, force_all: bool = False, *, persist: bool = 
     return changed
 
 
-def pull_from_myplaces(
+def state_station_positions(state) -> dict[str, tuple[float, float]]:
+    doc = state.root.find(f"{NS}Document")
+    if doc is None:
+        return {}
+    return {code: (a["lat"], a["lon"]) for code, a in read_anchors(doc).items()}
+
+
+def reload_state_from_disk(state, path: Path = KML_PATH) -> None:
+    tree = ET.parse(path)
+    state.set_tree(tree)
+    doc = state.root.find(f"{NS}Document")
+    if doc is not None:
+        save_cache(read_anchors(doc))
+
+
+def apply_station_positions(
     state,
-    myplaces_path: Path,
+    positions: dict[str, tuple[float, float]],
     *,
     source: str,
-    persist_backup: bool = True,
+    git_hist: "GitHistory | None" = None,
+    persist: bool = True,
 ) -> list[str]:
-    """Import GE edits from myplaces.kml, redraw attachments, serve via HTTP."""
-    from myplaces_import import apply_positions_to_document, read_myplaces_anchors
+    """Apply live pin positions, redraw attachments, serve via HTTP, optional git commit."""
+    from myplaces_import import apply_positions_to_document
 
     doc = state.root.find(f"{NS}Document")
     if doc is None:
         raise RuntimeError("Document element not found")
-
-    positions = read_myplaces_anchors(myplaces_path)
-    if not positions:
-        print(f"[{source}] No station anchors found in {myplaces_path}")
-        return []
 
     imported = apply_positions_to_document(doc, positions)
     if not imported:
@@ -558,13 +569,65 @@ def pull_from_myplaces(
 
     changed = sync_document(doc)
     state.bump()
-    if persist_backup and (changed or imported):
+    if persist:
         write_tree(state.tree, KML_PATH)
-    if changed:
+
+    codes = sorted(set(changed) | set(imported))
+    if git_hist is not None and git_hist.commit_move(codes):
+        print(
+            f"[{source}] {', '.join(codes)} — "
+            f"attachments updated, committed (press u to undo, {git_hist.undos_available} available)"
+        )
+    elif changed:
         print(f"[{source}] Redrew attachments for: {', '.join(changed)}")
     else:
-        print(f"[{source}] Updated station positions: {', '.join(sorted(imported))}")
-    return changed or sorted(imported)
+        print(f"[{source}] Moved: {', '.join(codes)}")
+    return codes
+
+
+def pull_from_myplaces(
+    state,
+    myplaces_path: Path,
+    *,
+    source: str,
+    persist_backup: bool = True,
+    git_hist: "GitHistory | None" = None,
+) -> list[str]:
+    from myplaces_import import read_myplaces_anchors
+
+    positions = read_myplaces_anchors(myplaces_path)
+    if not positions:
+        print(f"[{source}] No station anchors found in {myplaces_path}")
+        return []
+    return apply_station_positions(
+        state,
+        positions,
+        source=source,
+        git_hist=git_hist,
+        persist=persist_backup,
+    )
+
+
+def process_live_station_moves(
+    state,
+    *,
+    source: str = "pins",
+    git_hist: "GitHistory | None" = None,
+) -> list[str]:
+    """Poll My Places pin coordinates vs served state; redraw when they differ."""
+    from myplaces_import import diff_station_positions, read_live_station_positions
+
+    served = state_station_positions(state)
+    live = read_live_station_positions()
+    if not live:
+        return []
+
+    moved = diff_station_positions(served, live)
+    if not moved:
+        return []
+
+    subset = {code: live[code] for code in moved if code in live}
+    return apply_station_positions(state, subset, source=source, git_hist=git_hist)
 
 
 def shutdown_on_earth_exit(
@@ -599,34 +662,26 @@ def ensure_earth_open(open_url: str) -> None:
 
 def watch(
     path: Path = KML_PATH,
-    interval: float = 0.5,
-    debounce_s: float = 0.5,
+    interval: float = 0.2,
     *,
     open_earth: bool = True,
     port: int = DEFAULT_SERVER_PORT,
     host: str = "127.0.0.1",
 ) -> None:
+    from console_keys import KeyListener
     from earth_launcher import is_google_earth_running
+    from git_history import GitHistory
     from kml_server import KmlServer, KmlState
     from myplaces_import import MYPLACES_PATH
 
     tree = ET.parse(path)
     state = KmlState()
     state.set_tree(tree)
-
-    pending_source: str | None = None
-    pending_at = 0.0
-    myplaces_mtime = (
-        MYPLACES_PATH.stat().st_mtime if MYPLACES_PATH.is_file() else 0.0
-    )
-
-    def schedule_pull(source: str) -> None:
-        nonlocal pending_source, pending_at
-        pending_source = source
-        pending_at = time.time()
+    git_hist = GitHistory(PROJECT_ROOT, path)
+    keys = KeyListener()
 
     def on_ping(_query: dict) -> None:
-        schedule_pull("NetworkLink ping")
+        process_live_station_moves(state, source="NetworkLink", git_hist=git_hist)
 
     try:
         server = KmlServer(state, host=host, port=port, on_ping=on_ping)
@@ -640,14 +695,14 @@ def watch(
 
     link_url = server.link_url
 
-    print("CircleCity HTTP NetworkLink (Google Earth pulls KML from here; does not edit disk live)")
+    print("CircleCity — live pin watch + HTTP NetworkLink")
     print(f"  {link_url}")
-    print(f"Watching Google Earth saves in: {MYPLACES_PATH}")
-    print("  Drag stations in GE, then Save (Ctrl+S) — GE writes myplaces.kml, not data/seismic_network.kml")
+    print(f"  Polling station pin positions in {MYPLACES_PATH} every {interval:.2f}s")
+    print("  Drag pins in GE — no manual save required when GE flushes My Places")
+    print("  Keys: u = undo last move   q = quit")
 
-    if MYPLACES_PATH.is_file():
-        pull_from_myplaces(state, MYPLACES_PATH, source="startup", persist_backup=True)
-        myplaces_mtime = MYPLACES_PATH.stat().st_mtime
+    process_live_station_moves(state, source="startup", git_hist=None)
+    myplaces_mtime = MYPLACES_PATH.stat().st_mtime if MYPLACES_PATH.is_file() else 0.0
 
     track_earth = open_earth
     ge_was_running = track_earth and is_google_earth_running()
@@ -657,22 +712,27 @@ def watch(
         ge_was_running = is_google_earth_running()
 
     if track_earth and ge_was_running:
-        print("  Close Google Earth to save My Places and stop sync automatically.")
+        print("  Close Google Earth to archive My Places and stop sync.")
+
+    keys.start()
+    quit_requested = False
 
     try:
-        while True:
-            if pending_source and (time.time() - pending_at) >= debounce_s:
-                source = pending_source
-                pending_source = None
-                pull_from_myplaces(state, MYPLACES_PATH, source=source)
-                if MYPLACES_PATH.is_file():
-                    myplaces_mtime = MYPLACES_PATH.stat().st_mtime
+        while not quit_requested:
+            for ch in keys.poll():
+                if ch == "u":
+                    if git_hist.undo():
+                        reload_state_from_disk(state)
+                        print(
+                            f"Undo OK — {git_hist.undos_available} more "
+                            f"(press u again to undo further)"
+                        )
+                    else:
+                        print("Nothing to undo.")
+                elif ch == "q":
+                    quit_requested = True
 
-            if MYPLACES_PATH.is_file():
-                current = MYPLACES_PATH.stat().st_mtime
-                if current != myplaces_mtime:
-                    myplaces_mtime = current
-                    schedule_pull("myplaces.kml")
+            process_live_station_moves(state, source="pins", git_hist=git_hist)
 
             if track_earth:
                 ge_running = is_google_earth_running()
@@ -685,6 +745,7 @@ def watch(
     except KeyboardInterrupt:
         print("\nStopped.")
     finally:
+        keys.stop()
         server.stop()
 
 
@@ -711,6 +772,12 @@ def main() -> None:
         "--pull-now",
         action="store_true",
         help="One-shot import from ~/.googleearth/myplaces.kml (no server)",
+    )
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=0.2,
+        help="Seconds between station pin position polls (default: 0.2)",
     )
     args = parser.parse_args()
 
@@ -750,7 +817,7 @@ def main() -> None:
         return
 
     if args.watch:
-        watch(open_earth=not args.no_earth, port=args.port)
+        watch(open_earth=not args.no_earth, port=args.port, interval=args.poll_interval)
         return
 
     changed = sync_kml(force_all=args.force_all)

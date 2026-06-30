@@ -18,7 +18,7 @@ See **[Docs/quick-reference.md](Docs/quick-reference.md)** for the full action â
 ./tools/bin/start-earth-sync.sh
 ```
 
-Starts a local HTTP NetworkLink server (`http://127.0.0.1:8765/link.kml`). Google Earth pulls KML from memory â€” **not** by editing `data/seismic_network.kml` on disk. Drag stations, then **Save** (Ctrl+S); GE writes `~/.googleearth/myplaces.kml`, which sync imports. NetworkLink refresh pushes updated attachments back to GE.
+Starts a local HTTP NetworkLink server (`http://127.0.0.1:8765/link.kml`). Sync **polls station pin positions** in `~/.googleearth/myplaces.kml` every 0.2 s (no manual save). Each move redraws attachments, auto-commits `data/seismic_network.kml` to git, and pushes updates to GE on NetworkLink refresh. Press **`u`** in the sync terminal to undo (once per move).
 
 See **[Docs/networklink-architecture.md](Docs/networklink-architecture.md)**.
 

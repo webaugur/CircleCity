@@ -60,6 +60,47 @@ def _code_from_name(name: str) -> str | None:
     return None
 
 
+def read_live_station_positions(
+    *,
+    eps: float = 1e-9,
+) -> dict[str, tuple[float, float]]:
+    """Read station pin positions from GE My Places (main + backup), not file mtimes."""
+    candidates = [
+        MYPLACES_PATH,
+        MYPLACES_PATH.parent / "myplaces.backup.kml",
+    ]
+    best: dict[str, tuple[float, float]] = {}
+    for path in candidates:
+        if not path.is_file():
+            continue
+        try:
+            positions = read_myplaces_anchors(path)
+        except (ET.ParseError, OSError):
+            continue
+        if len(positions) > len(best):
+            best = positions
+    return best
+
+
+def diff_station_positions(
+    baseline: dict[str, tuple[float, float]],
+    current: dict[str, tuple[float, float]],
+    *,
+    eps: float = 1e-6,
+) -> set[str]:
+    """Return station codes whose pins moved between baseline and current."""
+    moved: set[str] = set()
+    for code, (lat, lon) in current.items():
+        prev = baseline.get(code)
+        if prev is None:
+            moved.add(code)
+            continue
+        plat, plon = prev
+        if abs(lat - plat) > eps or abs(lon - plon) > eps:
+            moved.add(code)
+    return moved
+
+
 def read_myplaces_anchors(path: Path = MYPLACES_PATH) -> dict[str, tuple[float, float]]:
     """Return {station_code: (lat, lon)} from every Stations/Reference Points placemark."""
     if not path.is_file():

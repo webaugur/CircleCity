@@ -11,8 +11,10 @@ Each row: **action → intended outcome → code → data**.
 | Run `./tools/bin/start-earth-sync.sh` | HTTP server + watch start; GE opens NetworkLink URL | `start-earth-sync.sh` → `kml_sync.watch()` | `http://127.0.0.1:8765/link.kml` |
 | GE loads NetworkLink | GE GETs `/main.kml` every 3 s (`refreshMode=onInterval`) | `kml_server.KmlServer` | in-memory `KmlState` |
 | GE view stops | GE GETs `/main.kml?ping=1…` (`viewRefreshMode=onStop`) | `on_ping` → `schedule_pull` | — |
-| Drag station + **Save** (Ctrl+S) | GE writes **My Places**, not `data/seismic_network.kml` | Google Earth save | `~/.googleearth/myplaces.kml` |
-| myplaces or ping fires (watch) | Import positions → redraw attachments → serve new KML over HTTP | `pull_from_myplaces`, `sync_document`, `KmlState.bump` | myplaces → memory; backup `data/seismic_network.kml` |
+| Drag a station pin in GE | Sync polls pin **coordinates** in myplaces every 0.2 s (not file mtimes) | `process_live_station_moves`, `read_live_station_positions`, `diff_station_positions` | `~/.googleearth/myplaces.kml` |
+| Pin position differs from served KML | Redraw attachments, HTTP bump, git commit | `apply_station_positions`, `GitHistory.commit_move` | memory + `data/seismic_network.kml` |
+| Press **u** in sync terminal | Undo one committed move | `GitHistory.undo` → `reload_state_from_disk` | git `HEAD~1` |
+| Press **u** × N | Undo N moves one step at a time | repeated `GitHistory.undo` | git history |
 | Sync redraws moved `CODE` | Lines, circles, rainbow rings update; next GE refresh shows them | `sync_document` | HTTP `/main.kml` response |
 | Close Google Earth (sync started GE) | Final myplaces import, archive to `data/myplaces_saved.kml`, stop server | `shutdown_on_earth_exit()` | `~/.googleearth/myplaces.kml` → `data/` |
 

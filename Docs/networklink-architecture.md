@@ -11,7 +11,7 @@ Google Earth                         CircleCity sync
 ─────────────                        ───────────────
 Drag station (in memory)
      │
-Save (Ctrl+S) ─────────────────────► ~/.googleearth/myplaces.kml  (mtime watch)
+Pin drag (GE flushes My Places) ───► ~/.googleearth/myplaces.kml  (coordinate poll)
      │                                        │
      │                                        ├─ import station positions
      │                                        ├─ redraw attachments in memory
@@ -43,16 +43,32 @@ GET …/main.kml?ping=1 ◄─────────────────�
 
 After a successful pull, sync optionally persists to `data/seismic_network.kml` as a **backup** only. The live document GE displays is the HTTP-served KML.
 
+## Live pin watch + git undo
+
+Sync polls **station pin coordinates** in `~/.googleearth/myplaces.kml` every 0.2 s (not file mtimes). When a pin moves relative to the served KML:
+
+1. Attachments redraw in memory
+2. HTTP `/main.kml` updates (GE sees it on next refresh)
+3. `data/seismic_network.kml` is committed to git
+
+**Console keys** (while sync is running):
+
+| Key | Action |
+|-----|--------|
+| `u` | Undo last committed move (`git reset --hard HEAD~1`, reload KML) |
+| `u` × N | Undo N moves one step at a time |
+| `q` | Quit sync |
+
 ## Usage checklist
 
 1. `./tools/bin/start-earth-sync.sh`
 2. Google Earth opens `http://127.0.0.1:8765/link.kml` (NetworkLink)
-3. Expand **seismic_network** under the link — stations load from `/main.kml`
-4. Drag a station, **Save** (Ctrl+S)
-5. Terminal shows `[myplaces.kml] Redrew attachments for: …`
+3. Expand **seismic_network** — stations load from `/main.kml`
+4. Drag a station pin (GE writes My Places when the drag completes)
+5. Terminal: `[pins] KBS — attachments updated, committed (press u to undo…)`
 6. Within ~3 s GE refresh shows updated lines/circles/rings
 
-Manual one-shot import without the server: `python3 tools/bin/kml_sync.py --pull-now`
+Manual one-shot import: `python3 tools/bin/kml_sync.py --pull-now`
 
 ## Stop on Google Earth exit
 
