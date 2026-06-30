@@ -605,8 +605,16 @@ def watch(
     def on_ping(_query: dict) -> None:
         schedule_pull("NetworkLink ping")
 
-    server = KmlServer(state, host=host, port=port, on_ping=on_ping)
-    server.start()
+    try:
+        server = KmlServer(state, host=host, port=port, on_ping=on_ping)
+        server.start()
+    except OSError as exc:
+        if exc.errno == 98:  # EADDRINUSE
+            raise SystemExit(
+                f"Port {port} already in use. Stop the other sync or run with --port {port + 1}"
+            ) from exc
+        raise
+
     link_url = server.link_url
 
     print("CircleCity HTTP NetworkLink (Google Earth pulls KML from here; does not edit disk live)")
@@ -614,11 +622,15 @@ def watch(
     print(f"Watching Google Earth saves in: {MYPLACES_PATH}")
     print("  Drag stations in GE, then Save (Ctrl+S) — GE writes myplaces.kml, not data/seismic_network.kml")
 
+    if MYPLACES_PATH.is_file():
+        pull_from_myplaces(state, MYPLACES_PATH, source="startup", persist_backup=True)
+        myplaces_mtime = MYPLACES_PATH.stat().st_mtime
+
     if open_earth:
         ensure_earth_open(link_url)
 
-    while True:
-        try:
+    try:
+        while True:
             if pending_source and (time.time() - pending_at) >= debounce_s:
                 source = pending_source
                 pending_source = None
@@ -633,9 +645,10 @@ def watch(
                     schedule_pull("myplaces.kml")
 
             time.sleep(interval)
-        except KeyboardInterrupt:
-            print("\nStopped.")
-            break
+    except KeyboardInterrupt:
+        print("\nStopped.")
+    finally:
+        server.stop()
 
 
 def main() -> None:
@@ -657,7 +670,23 @@ def main() -> None:
         default=DEFAULT_SERVER_PORT,
         help="HTTP port for NetworkLink KML server (default: 8765)",
     )
+    parser.add_argument(
+        "--pull-now",
+        action="store_true",
+        help="One-shot import from ~/.googleearth/myplaces.kml (no server)",
+    )
     args = parser.parse_args()
+
+    if args.pull_now:
+        from kml_server import KmlState
+
+        tree = ET.parse(KML_PATH)
+        state = KmlState()
+        state.set_tree(tree)
+        from myplaces_import import MYPLACES_PATH
+
+        pull_from_myplaces(state, MYPLACES_PATH, source="--pull-now", persist_backup=True)
+        return
 
     if args.build_rainbow:
         tree = ET.parse(KML_PATH)

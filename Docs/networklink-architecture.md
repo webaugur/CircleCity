@@ -42,3 +42,14 @@ GET …/main.kml?ping=1 ◄─────────────────�
 ## Backup
 
 After a successful pull, sync optionally persists to `data/seismic_network.kml` as a **backup** only. The live document GE displays is the HTTP-served KML.
+
+## Usage checklist
+
+1. `./tools/bin/start-earth-sync.sh`
+2. Google Earth opens `http://127.0.0.1:8765/link.kml` (NetworkLink)
+3. Expand **seismic_network** under the link — stations load from `/main.kml`
+4. Drag a station, **Save** (Ctrl+S)
+5. Terminal shows `[myplaces.kml] Redrew attachments for: …`
+6. Within ~3 s GE refresh shows updated lines/circles/rings
+
+Manual one-shot import without the server: `python3 tools/bin/kml_sync.py --pull-now`

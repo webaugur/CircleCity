@@ -161,5 +161,6 @@ class KmlServer:
 
     def stop(self) -> None:
         self._httpd.shutdown()
+        self._httpd.server_close()
         if self._thread:
             self._thread.join(timeout=2)

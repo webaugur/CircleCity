@@ -32,6 +32,7 @@ See **[Docs/networklink-architecture.md](Docs/networklink-architecture.md)**.
 | `python3 tools/bin/kml_sync.py --init` | Initialize position cache |
 | `python3 tools/bin/kml_sync.py --force-all` | Redraw all attachments |
 | `python3 tools/bin/kml_sync.py --build-rainbow` | Rebuild Rainbow Rings layer |
+| `python3 tools/bin/kml_sync.py --pull-now` | Import myplaces once (no server) |
 
 ## Files
 
