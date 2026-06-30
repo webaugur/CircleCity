@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -15,8 +16,10 @@ import xml.etree.ElementTree as ET
 KML_NS = "http://www.opengis.net/kml/2.2"
 NS = f"{{{KML_NS}}}"
 
-KML_PATH = Path(__file__).parent / "seismic_network.kml"
-CACHE_PATH = Path(__file__).parent / ".station_positions.json"
+ROOT = Path(__file__).parent
+KML_PATH = ROOT / "seismic_network.kml"
+LINK_KML_PATH = ROOT / "seismic_network_link.kml"
+CACHE_PATH = ROOT / ".station_positions.json"
 
 LINE_ALT_M = 100000
 CIRCLE_RADIUS_M = 33966
@@ -480,7 +483,25 @@ def sync_kml(path: Path = KML_PATH, force_all: bool = False) -> list[str]:
     return sorted(changed)
 
 
-def watch(path: Path = KML_PATH, interval: float = 0.5, debounce_s: float = 0.4) -> None:
+def ensure_earth_open(link_kml: Path = LINK_KML_PATH) -> None:
+    from earth_launcher import ensure_google_earth
+
+    try:
+        print(ensure_google_earth(link_kml))
+    except (FileNotFoundError, RuntimeError) as exc:
+        print(f"Warning: {exc}", file=sys.stderr)
+
+
+def watch(
+    path: Path = KML_PATH,
+    interval: float = 0.5,
+    debounce_s: float = 0.4,
+    *,
+    open_earth: bool = True,
+    link_kml: Path = LINK_KML_PATH,
+) -> None:
+    if open_earth:
+        ensure_earth_open(link_kml)
     print(f"Watching {path} for saves after station drags (Ctrl+C to stop)...")
     mtime = 0.0
     pending = 0.0
@@ -511,6 +532,11 @@ def main() -> None:
     parser.add_argument(
         "--build-rainbow", action="store_true", help="Build or rebuild Rainbow Rings layer"
     )
+    parser.add_argument(
+        "--no-earth",
+        action="store_true",
+        help="Do not start or focus Google Earth when watching",
+    )
     args = parser.parse_args()
 
     if args.build_rainbow:
@@ -538,7 +564,7 @@ def main() -> None:
         return
 
     if args.watch:
-        watch()
+        watch(open_earth=not args.no_earth)
         return
 
     changed = sync_kml(force_all=args.force_all)

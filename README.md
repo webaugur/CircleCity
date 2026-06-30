@@ -8,7 +8,7 @@ IU seismograph network KML for Google Earth Pro, with live geometry sync when st
 ./start-earth-sync.sh
 ```
 
-Open `seismic_network_link.kml` in Google Earth Pro, drag stations under **Stations**, then **Save** (Ctrl+S). Attached lines, circles, and rainbow rings redraw automatically; the network link reloads within a few seconds.
+Sync starts Google Earth Pro automatically (or opens `seismic_network_link.kml` in an already-running instance). Drag stations under **Stations**, then **Save** (Ctrl+S). Attached lines, circles, and rainbow rings redraw automatically; the network link reloads within a few seconds.
 
 ## Commands
 
@@ -16,6 +16,7 @@ Open `seismic_network_link.kml` in Google Earth Pro, drag stations under **Stati
 |---------|---------|
 | `./start-earth-sync.sh` | Watch `seismic_network.kml` and sync on save |
 | `python3 kml_sync.py --watch` | Same as above |
+| `python3 kml_sync.py --watch --no-earth` | Watch only; skip Google Earth launch |
 | `python3 kml_sync.py --init` | Initialize position cache |
 | `python3 kml_sync.py --force-all` | Redraw all attachments |
 | `python3 kml_sync.py --build-rainbow` | Rebuild Rainbow Rings layer |
