@@ -16,10 +16,12 @@ import xml.etree.ElementTree as ET
 KML_NS = "http://www.opengis.net/kml/2.2"
 NS = f"{{{KML_NS}}}"
 
-ROOT = Path(__file__).parent
-KML_PATH = ROOT / "seismic_network.kml"
-LINK_KML_PATH = ROOT / "seismic_network_link.kml"
-CACHE_PATH = ROOT / ".station_positions.json"
+BIN_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BIN_DIR.parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+KML_PATH = DATA_DIR / "seismic_network.kml"
+LINK_KML_PATH = DATA_DIR / "seismic_network_link.kml"
+CACHE_PATH = DATA_DIR / ".station_positions.json"
 
 LINE_ALT_M = 100000
 CIRCLE_RADIUS_M = 33966
