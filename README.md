@@ -18,7 +18,7 @@ See **[Docs/quick-reference.md](Docs/quick-reference.md)** for the full action â
 ./tools/bin/start-earth-sync.sh
 ```
 
-Sync starts Google Earth Pro automatically (or opens `data/seismic_network_link.kml` in an already-running instance). Drag stations under **Stations**, then **Save** (Ctrl+S). Attached lines, circles, and rainbow rings redraw automatically; the network link reloads within a few seconds.
+Sync opens `data/seismic_network.kml` for editing and registers `data/seismic_network_link.kml` as a NetworkLink (absolute `file://` href) for auto-reload. Drag stations under **Stations**, then **Save** (Ctrl+S). The watcher detects saves on either KML file; attachments redraw automatically.
 
 ## Commands
 

@@ -42,6 +42,8 @@ RAINBOW_RINGS = [
 ]
 RAINBOW_GROUND_ALT = 0
 
+_sync_write_until = 0.0
+
 
 def txt(parent: ET.Element, tag: str, value: str) -> ET.Element:
     el = ET.SubElement(parent, tag)
@@ -416,7 +418,46 @@ def moved_anchors(anchors: dict[str, dict], cache: dict[str, list[float]], eps: 
     return moved
 
 
+def ensure_network_link(
+    link_path: Path = LINK_KML_PATH,
+    target_path: Path = KML_PATH,
+    *,
+    bump_refresh: bool = False,
+) -> bool:
+    """Point NetworkLink href at the absolute file URI so onChange refresh works."""
+    ET.register_namespace("", KML_NS)
+    target_uri = target_path.resolve().as_uri()
+    tree = ET.parse(link_path)
+    root = tree.getroot()
+    href_el = root.find(f".//{NS}NetworkLink/{NS}Link/{NS}href")
+    if href_el is None:
+        href_el = root.find(".//{*}NetworkLink/{*}Link/{*}href")
+    if href_el is None:
+        raise RuntimeError(f"No NetworkLink href in {link_path}")
+
+    changed = href_el.text != target_uri
+    href_el.text = target_uri
+
+    if bump_refresh:
+        desc = root.find(f"{NS}Document/{NS}description")
+        if desc is None:
+            desc = root.find("{*}Document/{*}description")
+        if desc is not None:
+            stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            base = (desc.text or "").split("Last sync refresh:")[0].rstrip()
+            desc.text = f"{base}\n\nLast sync refresh: {stamp}"
+            changed = True
+
+    if changed:
+        ET.indent(tree, space="  ")
+        with open(link_path, "wb") as f:
+            f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write(ET.tostring(root, encoding="utf-8"))
+    return changed
+
+
 def sync_kml(path: Path = KML_PATH, force_all: bool = False) -> list[str]:
+    global _sync_write_until
     tree = ET.parse(path)
     root = tree.getroot()
     doc = root.find(f"{NS}Document")
@@ -482,16 +523,31 @@ def sync_kml(path: Path = KML_PATH, force_all: bool = False) -> list[str]:
         f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write(ET.tostring(root, encoding="utf-8"))
 
+    _sync_write_until = time.time() + 1.5
+    try:
+        ensure_network_link(LINK_KML_PATH, path, bump_refresh=True)
+        _sync_write_until = time.time() + 1.5
+    except (OSError, RuntimeError) as exc:
+        print(f"Warning: NetworkLink refresh bump failed: {exc}", file=sys.stderr)
+
     return sorted(changed)
 
 
-def ensure_earth_open(link_kml: Path = LINK_KML_PATH) -> None:
+def ensure_earth_open(
+    link_kml: Path = LINK_KML_PATH,
+    edit_kml: Path = KML_PATH,
+) -> None:
     from earth_launcher import ensure_google_earth
 
     try:
-        print(ensure_google_earth(link_kml))
+        ensure_network_link(link_kml, edit_kml)
+        print(ensure_google_earth(link_kml, edit_kml))
     except (FileNotFoundError, RuntimeError) as exc:
         print(f"Warning: {exc}", file=sys.stderr)
+
+
+def _watch_targets(edit_kml: Path, link_kml: Path) -> list[Path]:
+    return [edit_kml.resolve(), link_kml.resolve()]
 
 
 def watch(
@@ -503,23 +559,49 @@ def watch(
     link_kml: Path = LINK_KML_PATH,
 ) -> None:
     if open_earth:
-        ensure_earth_open(link_kml)
-    print(f"Watching {path} for saves after station drags (Ctrl+C to stop)...")
-    mtime = 0.0
+        ensure_earth_open(link_kml, path)
+
+    watch_paths = _watch_targets(path, link_kml)
+    mtimes = {p: p.stat().st_mtime for p in watch_paths}
     pending = 0.0
+    pending_sources: list[str] = []
+
+    print("Watching for saves after station drags (Ctrl+C to stop)...")
+    for p in watch_paths:
+        print(f"  {p}")
+
     while True:
         try:
-            current = path.stat().st_mtime
-            if current != mtime:
-                mtime = current
+            if time.time() < _sync_write_until:
+                for p in watch_paths:
+                    mtimes[p] = p.stat().st_mtime
+                time.sleep(interval)
+                continue
+
+            touched: list[str] = []
+            for p in watch_paths:
+                current = p.stat().st_mtime
+                if current != mtimes[p]:
+                    mtimes[p] = current
+                    touched.append(p.name)
+            if touched:
                 pending = time.time()
+                pending_sources = touched
+
             if pending and (time.time() - pending) >= debounce_s:
                 pending = 0.0
+                source_text = ", ".join(pending_sources)
+                pending_sources = []
                 changed = sync_kml(path)
+                for p in watch_paths:
+                    mtimes[p] = p.stat().st_mtime
                 if changed:
-                    print(f"Redrew attachments for: {', '.join(changed)}")
+                    print(f"[{source_text}] Redrew attachments for: {', '.join(changed)}")
                 else:
-                    print("File saved — no station coordinate changes detected.")
+                    print(
+                        f"[{source_text}] Save detected — "
+                        "no station coordinate changes in seismic_network.kml."
+                    )
             time.sleep(interval)
         except KeyboardInterrupt:
             print("\nStopped.")

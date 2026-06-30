@@ -6,12 +6,13 @@
       Auto-reloads seismic_network.kml when kml_sync.py --watch rewrites it.
 
       Workflow:
-      1. Run ./tools/bin/start-earth-sync.sh (Google Earth opens this file)
-      2. Expand the network link, drag stations under Stations
-      3. File → Save (Ctrl+S) — saves back to seismic_network.kml
-      4. Watch redraws lines/circles/rainbow; this link reloads within a few seconds
+      1. Run ./tools/bin/start-earth-sync.sh
+      2. Edit seismic_network.kml (opened directly); NetworkLink here auto-reloads it
+      3. Drag stations under Stations, Save (Ctrl+S)
+      4. Watch redraws lines/circles/rainbow; href onChange refresh fires on file:// target
 
       Data lives in data/; sync scripts in tools/bin/.
+      Sync rewrites href to a local file:// URI at startup.
     </description>
     <NetworkLink>
       <name>seismic_network.kml</name>
