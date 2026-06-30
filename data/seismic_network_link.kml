@@ -8,12 +8,13 @@
 
       Google Earth saves edits to ~/.googleearth/myplaces.kml, not this file.
       See Docs/networklink-architecture.md.
-    </description>
+
+Last sync refresh: 2026-06-30 02:27:12</description>
     <NetworkLink>
       <name>seismic_network.kml</name>
       <open>1</open>
       <Link>
-        <href>seismic_network.kml</href>
+        <href>file:///home/user/Documents/Ion%20Bridge/data/seismic_network.kml</href>
         <refreshMode>onChange</refreshMode>
         <refreshInterval>2</refreshInterval>
       </Link>
