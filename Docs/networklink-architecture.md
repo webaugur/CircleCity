@@ -45,7 +45,14 @@ After a successful pull, sync optionally persists to `data/seismic_network.kml` 
 
 ## Live pin watch + git undo
 
-**Google Earth on Linux only writes pin positions to My Places on Save.** Sync sends Ctrl+S to GE every 1 s (`earth_autosave.py` via `xdotool`), then polls coordinates in `~/.googleearth/myplaces.kml` every 0.2 s. When a pin moves relative to the served KML:
+**Google Earth on Linux only writes pin positions to My Places on Save.** Sync sends Ctrl+S to GE every 1 s (`earth_autosave.py`):
+
+| Session | Tool |
+|---------|------|
+| **Wayland** (your setup) | `wtype` → focused app, or `ydotool` |
+| X11 | `xdotool` → GE window |
+
+Then polls coordinates in `~/.googleearth/myplaces.kml` every 0.2 s. When a pin moves relative to the served KML:
 
 1. Attachments redraw in memory
 2. HTTP `/main.kml` updates (GE sees it on next refresh)

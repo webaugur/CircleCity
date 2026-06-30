@@ -670,7 +670,12 @@ def watch(
     auto_save_interval: float = 1.0,
 ) -> None:
     from console_keys import KeyListener
-    from earth_autosave import autosave_google_earth
+    from earth_autosave import (
+        autosave_backend,
+        autosave_google_earth,
+        autosave_help,
+        display_backend,
+    )
     from earth_launcher import is_google_earth_running
     from git_history import GitHistory
     from kml_server import KmlServer, KmlState
@@ -701,11 +706,21 @@ def watch(
     print("CircleCity — live pin watch + HTTP NetworkLink")
     print(f"  {link_url}")
     print(f"  Polling pin coordinates every {interval:.2f}s in {MYPLACES_PATH}")
+    save_tool = autosave_backend()
     if auto_save_interval > 0:
-        print(
-            f"  GE only writes pins on Save — auto-saving every {auto_save_interval:.1f}s "
-            "(so drags flush without manual Ctrl+S)"
-        )
+        if save_tool:
+            print(
+                f"  GE only writes pins on Save — auto-saving every {auto_save_interval:.1f}s "
+                f"via {save_tool} ({display_backend()})"
+            )
+            if display_backend() == "wayland" and save_tool == "wtype":
+                print("  Keep Google Earth focused while dragging (wtype sends Ctrl+S to focused app)")
+        else:
+            print(f"  Auto-save wanted but no tool available ({display_backend()}):")
+            for line in autosave_help().splitlines():
+                print(f"    {line}")
+            print("  Falling back: Save (Ctrl+S) manually in GE after each drag")
+            auto_save_interval = 0.0
     else:
         print("  Auto-save off — Save (Ctrl+S) in GE after each drag")
     print("  Keys: u = undo last move   q = quit")
@@ -761,7 +776,8 @@ def watch(
                         time.sleep(0.12)
                         process_live_station_moves(state, source="auto-save", git_hist=git_hist)
                     elif not autosave_warned:
-                        print("  Warning: could not auto-save GE (xdotool/window not found)")
+                        tool = autosave_backend() or "none"
+                        print(f"  Warning: auto-save failed ({tool} on {display_backend()})")
                         autosave_warned = True
 
             if notify_pull:

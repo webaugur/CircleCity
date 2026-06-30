@@ -18,7 +18,7 @@ See **[Docs/quick-reference.md](Docs/quick-reference.md)** for the full action �
 ./tools/bin/start-earth-sync.sh
 ```
 
-Starts HTTP NetworkLink (`http://127.0.0.1:8765/link.kml`). GE only writes pin moves on **Save** — sync auto-sends Ctrl+S every 1 s (`xdotool`), polls coordinates, redraws attachments, git-commits each move. Press **`u`** to undo.
+Starts HTTP NetworkLink (`http://127.0.0.1:8765/link.kml`). GE only writes pin moves on **Save** — sync auto-sends Ctrl+S every 1 s via **wtype** (Wayland) or xdotool (X11). Install: `sudo apt install wtype`. Press **`u`** to undo.
 
 See **[Docs/networklink-architecture.md](Docs/networklink-architecture.md)**.
 
