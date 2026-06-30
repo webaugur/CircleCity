@@ -7,7 +7,10 @@ IU seismograph network KML for Google Earth Pro, with live geometry sync when st
 ```
 data/              KML, KMZ, and station metadata
 tools/bin/         sync scripts and Google Earth launcher
+Docs/              Quick reference (when X → Y, code Z, data A)
 ```
+
+See **[Docs/quick-reference.md](Docs/quick-reference.md)** for the full action → outcome map.
 
 ## Quick start
 
